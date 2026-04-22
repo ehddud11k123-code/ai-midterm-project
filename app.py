@@ -35,18 +35,21 @@ st.caption("텍스트를 입력하면 키워드·감정·가독성·워드클라
 mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교"], horizontal=True)
 
 def get_text_input(label: str = "") -> str:
-    col_input, col_btn = st.columns([5, 1])
-    with col_input:
-        method = st.radio(f"입력 방법{' (' + label + ')' if label else ''}", ["텍스트 입력", "파일 업로드"], horizontal=True, key=f"method_{label}")
+    key_text = f"textarea_{label}"
+
+    def _load_sample():
+        st.session_state[key_text] = SAMPLE_TEXT
+
+    method = st.radio(f"입력 방법{' (' + label + ')' if label else ''}", ["텍스트 입력", "파일 업로드"], horizontal=True, key=f"method_{label}")
     text = ""
     if method == "텍스트 입력":
-        text = st.text_area(f"텍스트 붙여넣기{' (' + label + ')' if label else ''}", height=180, key=f"textarea_{label}", placeholder="Paste your text here...")
+        col_area, col_btn = st.columns([5, 1])
         with col_btn:
             st.write("")
             st.write("")
-            if st.button("📋 샘플", key=f"sample_{label}"):
-                st.session_state[f"textarea_{label}"] = SAMPLE_TEXT
-                st.rerun()
+            st.button("📋 샘플", key=f"sample_{label}", on_click=_load_sample)
+        with col_area:
+            text = st.text_area(f"텍스트 붙여넣기{' (' + label + ')' if label else ''}", height=180, key=key_text, placeholder="Paste your text here...")
     else:
         uploaded = st.file_uploader(f"TXT 파일{' (' + label + ')' if label else ''}", type=["txt"], key=f"upload_{label}")
         if uploaded:
