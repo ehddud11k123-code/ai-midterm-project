@@ -1,5 +1,11 @@
+import nltk
 import streamlit as st
 from nltk.tokenize import sent_tokenize
+
+for _pkg in ["punkt", "punkt_tab", "stopwords", "averaged_perceptron_tagger",
+             "averaged_perceptron_tagger_eng", "maxent_ne_chunker",
+             "maxent_ne_chunker_tab", "words"]:
+    nltk.download(_pkg, quiet=True)
 
 from modules.stats import get_stats
 from modules.keywords import get_keywords
