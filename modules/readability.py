@@ -1,4 +1,5 @@
 from nltk.tokenize import sent_tokenize, word_tokenize
+from modules.lang_utils import detect_language
 
 
 def _count_syllables(word: str) -> int:
@@ -17,6 +18,12 @@ def _count_syllables(word: str) -> int:
 
 
 def get_readability(text: str) -> dict:
+    lang = detect_language(text)
+    if lang == "ko":
+        from modules.korean_nlp import korean_sentences, korean_readability
+        sentences = korean_sentences(text)
+        return korean_readability(text, sentences)
+
     sentences = sent_tokenize(text)
     words = [w for w in word_tokenize(text) if w.isalpha()]
 

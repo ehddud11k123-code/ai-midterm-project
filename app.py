@@ -22,8 +22,9 @@ from modules.ner import get_entities
 from modules.pos_analysis import get_pos_distribution, plot_pos_pie
 from modules.ngrams import get_ngrams, plot_ngram_bar
 from modules.export import generate_pdf_report
+from modules.lang_utils import detect_language
 
-SAMPLE_TEXT = """Artificial intelligence is transforming the world at an unprecedented pace.
+SAMPLE_TEXT_EN = """Artificial intelligence is transforming the world at an unprecedented pace.
 From healthcare to finance, AI systems are helping professionals make better decisions faster.
 Machine learning algorithms can now detect diseases from medical images with accuracy rivaling human experts.
 In the financial sector, AI-powered tools analyze market trends and manage risk in real time.
@@ -33,43 +34,79 @@ The future of AI depends not only on technical innovation but also on thoughtful
 Education systems must adapt to prepare students for a world where human-AI collaboration is the norm.
 Ultimately, artificial intelligence is a tool, and its impact will be shaped by the choices we make today."""
 
-st.set_page_config(page_title="Smart Document Analyzer", page_icon="📄", layout="wide")
-st.title("📄 Smart Document Analyzer")
-st.caption("텍스트를 입력하면 키워드·감정·가독성·워드클라우드 등을 분석합니다.")
+SAMPLE_TEXT_KO = """인공지능은 전례 없는 속도로 세상을 변화시키고 있습니다.
+의료부터 금융까지, AI 시스템은 전문가들이 더 빠르고 정확한 의사결정을 내릴 수 있도록 돕고 있습니다.
+머신러닝 알고리즘은 이제 의료 영상에서 질병을 인간 전문가 수준의 정확도로 진단할 수 있습니다.
+금융 분야에서는 AI 기반 도구가 시장 동향을 분석하고 실시간으로 리스크를 관리합니다.
+그러나 AI의 급속한 발전은 개인정보, 편향성, 책임 문제 등 중요한 윤리적 질문도 제기합니다.
+연구자와 정책 입안자들은 AI가 책임감 있게 개발되도록 가이드라인을 마련하기 위해 협력하고 있습니다.
+AI의 미래는 기술 혁신뿐만 아니라 사려 깊은 거버넌스와 대중의 신뢰에도 달려 있습니다.
+교육 시스템은 인간과 AI의 협업이 일상화된 세상에 학생들을 준비시키도록 변화해야 합니다.
+궁극적으로 인공지능은 도구이며, 그 영향력은 오늘 우리가 내리는 선택에 의해 결정될 것입니다."""
 
-# --- Input Section ---
+st.set_page_config(page_title="스마트 문서 분석기", page_icon="📄", layout="wide")
+st.title("📄 스마트 문서 분석기")
+st.caption("텍스트를 입력하면 키워드·감정·가독성·워드클라우드 등을 분석합니다. 한국어와 영어를 자동으로 인식합니다.")
+
 mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교"], horizontal=True)
+
 
 def get_text_input(label: str = "") -> str:
     key_text = f"textarea_{label}"
 
-    def _load_sample():
-        st.session_state[key_text] = SAMPLE_TEXT
+    def _load_sample_ko():
+        st.session_state[key_text] = SAMPLE_TEXT_KO
 
-    method = st.radio(f"입력 방법{' (' + label + ')' if label else ''}", ["텍스트 입력", "파일 업로드"], horizontal=True, key=f"method_{label}")
+    def _load_sample_en():
+        st.session_state[key_text] = SAMPLE_TEXT_EN
+
+    method = st.radio(
+        f"입력 방법{' (' + label + ')' if label else ''}",
+        ["텍스트 입력", "파일 업로드"],
+        horizontal=True,
+        key=f"method_{label}",
+    )
     text = ""
     if method == "텍스트 입력":
         col_area, col_btn = st.columns([5, 1])
         with col_btn:
             st.write("")
             st.write("")
-            st.button("📋 샘플", key=f"sample_{label}", on_click=_load_sample)
+            st.button("📋 한국어 샘플", key=f"sample_ko_{label}", on_click=_load_sample_ko)
+            st.button("📋 영어 샘플", key=f"sample_en_{label}", on_click=_load_sample_en)
         with col_area:
-            text = st.text_area(f"텍스트 붙여넣기{' (' + label + ')' if label else ''}", height=180, key=key_text, placeholder="Paste your text here...")
+            text = st.text_area(
+                f"텍스트 붙여넣기{' (' + label + ')' if label else ''}",
+                height=180,
+                key=key_text,
+                placeholder="한국어 또는 영어 텍스트를 붙여넣으세요...",
+            )
     else:
-        uploaded = st.file_uploader(f"TXT 파일{' (' + label + ')' if label else ''}", type=["txt"], key=f"upload_{label}")
+        uploaded = st.file_uploader(
+            f"TXT 파일{' (' + label + ')' if label else ''}",
+            type=["txt"],
+            key=f"upload_{label}",
+        )
         if uploaded:
             text = uploaded.read().decode("utf-8", errors="ignore")
             st.success(f"{len(text)} 글자 로드됨")
     return text
 
+
 def run_analysis(text: str) -> dict:
+    lang = detect_language(text)
+    if lang == "ko":
+        from modules.korean_nlp import korean_sentences
+        sentences = korean_sentences(text)
+    else:
+        sentences = sent_tokenize(text)
     return {
+        "lang": lang,
         "stats": get_stats(text),
         "keywords": get_keywords(text, top_n=20),
         "sentiment": get_sentiment(text),
         "readability": get_readability(text),
-        "sentences": sent_tokenize(text),
+        "sentences": sentences,
         "summary": get_summary(text, sentence_count=3),
         "entities": get_entities(text),
         "pos": get_pos_distribution(text),
@@ -77,7 +114,9 @@ def run_analysis(text: str) -> dict:
         "trigrams": get_ngrams(text, n=3, top_k=10),
     }
 
+
 def render_analysis(result: dict, text: str, key_prefix: str = ""):
+    lang = result.get("lang", "en")
     stats = result["stats"]
     keywords = result["keywords"]
     sentiment = result["sentiment"]
@@ -116,7 +155,9 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
 
         col_dl, _ = st.columns([1, 3])
         with col_dl:
-            pdf_bytes = generate_pdf_report(text, stats, sentiment, readability, keywords, summary)
+            pdf_bytes = generate_pdf_report(
+                text, stats, sentiment, readability, keywords, summary, lang=lang
+            )
             st.download_button(
                 label="📥 PDF 리포트 다운로드",
                 data=pdf_bytes,
@@ -157,7 +198,7 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             st.caption(f"Subjectivity: {sentiment['subjectivity']} (0=객관적, 1=주관적)")
         with col_read:
             st.subheader("📖 가독성 점수")
-            st.metric("Flesch Reading Ease", readability["score"])
+            st.metric("가독성 점수", readability["score"])
             st.markdown(f"**등급:** {readability['grade']}")
             grade_desc = {
                 "Very Easy": "매우 쉬운 글 — 초등학생도 이해 가능",
@@ -221,7 +262,6 @@ else:  # 두 문서 비교
 
         st.divider()
 
-        # Quick comparison table
         st.subheader("📊 비교 요약")
         comp_data = {
             "항목": ["단어 수", "문장 수", "감정", "가독성 점수", "가독성 등급"],

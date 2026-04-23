@@ -1,9 +1,14 @@
 from fpdf import FPDF
+import os
+import urllib.request
 
 
-def _safe_text(text: str) -> str:
-    """Remove characters that fpdf cannot render with Helvetica."""
-    return text.encode("latin-1", errors="replace").decode("latin-1")
+def _get_korean_font() -> str:
+    font_path = "/tmp/NanumGothic.ttf"
+    if not os.path.exists(font_path):
+        ttf_url = "https://raw.githubusercontent.com/google/fonts/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+        urllib.request.urlretrieve(ttf_url, font_path)
+    return font_path
 
 
 def generate_pdf_report(
@@ -13,70 +18,78 @@ def generate_pdf_report(
     readability: dict,
     keywords: list,
     summary: list,
+    lang: str = "en",
 ) -> bytes:
-    """Generate a PDF report and return as bytes."""
     pdf = FPDF(orientation="P", unit="mm", format="A4")
     pdf.set_margins(15, 15, 15)
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    page_w = pdf.w - pdf.l_margin - pdf.r_margin  # usable width
+    if lang == "ko":
+        font_path = _get_korean_font()
+        pdf.add_font("Nanum", fname=font_path)
+        pdf.set_font("Nanum", size=16)
+    else:
+        pdf.set_font("Helvetica", "B", 16)
+
+    page_w = pdf.w - pdf.l_margin - pdf.r_margin
 
     # Title
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(page_w, 10, "Smart Document Analyzer - Report", ln=True, align="C")
+    title = "스마트 문서 분석 리포트" if lang == "ko" else "Smart Document Analyzer - Report"
+    pdf.cell(page_w, 10, title, ln=True, align="C")
     pdf.ln(4)
 
+    def heading(txt):
+        if lang == "ko":
+            pdf.set_font("Nanum", size=12)
+        else:
+            pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(page_w, 8, txt, ln=True)
+
+    def body(txt):
+        if lang == "ko":
+            pdf.set_font("Nanum", size=10)
+        else:
+            pdf.set_font("Helvetica", size=10)
+        safe = txt if lang == "ko" else txt.encode("latin-1", errors="replace").decode("latin-1")
+        pdf.multi_cell(page_w, 6, safe)
+
     # Text snippet
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(page_w, 8, "Input Text (first 300 chars)", ln=True)
-    pdf.set_font("Helvetica", size=10)
-    snippet = _safe_text(text_snippet[:300].replace("\n", " "))
-    pdf.multi_cell(page_w, 6, snippet)
+    heading("입력 텍스트 (앞 300자)" if lang == "ko" else "Input Text (first 300 chars)")
+    snippet = text_snippet[:300].replace("\n", " ")
+    body(f"  {snippet}")
     pdf.ln(4)
 
     # Stats
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(page_w, 8, "Basic Statistics", ln=True)
-    pdf.set_font("Helvetica", size=10)
+    heading("기본 통계" if lang == "ko" else "Basic Statistics")
     for key, val in stats.items():
-        label = key.replace("_", " ").title()
-        pdf.cell(page_w, 6, f"  {label}: {val}", ln=True)
+        label = key.replace("_", " ")
+        body(f"  {label}: {val}")
     pdf.ln(4)
 
     # Sentiment
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(page_w, 8, "Sentiment Analysis", ln=True)
-    pdf.set_font("Helvetica", size=10)
-    pdf.cell(page_w, 6, f"  Label: {sentiment['label']}", ln=True)
-    pdf.cell(page_w, 6, f"  Polarity: {sentiment['polarity']}", ln=True)
-    pdf.cell(page_w, 6, f"  Subjectivity: {sentiment['subjectivity']}", ln=True)
+    heading("감정 분석" if lang == "ko" else "Sentiment Analysis")
+    body(f"  {'결과' if lang == 'ko' else 'Label'}: {sentiment['label']}")
+    body(f"  {'극성' if lang == 'ko' else 'Polarity'}: {sentiment['polarity']}")
     pdf.ln(4)
 
     # Readability
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(page_w, 8, "Readability", ln=True)
-    pdf.set_font("Helvetica", size=10)
-    pdf.cell(page_w, 6, f"  Score: {readability['score']}", ln=True)
-    pdf.cell(page_w, 6, f"  Grade: {readability['grade']}", ln=True)
+    heading("가독성" if lang == "ko" else "Readability")
+    body(f"  {'점수' if lang == 'ko' else 'Score'}: {readability['score']}")
+    body(f"  {'등급' if lang == 'ko' else 'Grade'}: {readability['grade']}")
     pdf.ln(4)
 
     # Keywords
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(page_w, 8, "Top Keywords", ln=True)
-    pdf.set_font("Helvetica", size=10)
+    heading("핵심 키워드" if lang == "ko" else "Top Keywords")
     for word, freq in keywords[:10]:
-        pdf.cell(page_w, 6, f"  {word}: {freq}", ln=True)
+        body(f"  {word}: {freq}")
     pdf.ln(4)
 
     # Summary
     if summary:
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(page_w, 8, "Extractive Summary", ln=True)
-        pdf.set_font("Helvetica", size=10)
+        heading("요약" if lang == "ko" else "Extractive Summary")
         for i, sentence in enumerate(summary, 1):
-            safe = _safe_text(f"  {i}. {sentence}")
-            pdf.multi_cell(page_w, 6, safe)
+            body(f"  {i}. {sentence}")
             pdf.ln(1)
 
     return bytes(pdf.output())
