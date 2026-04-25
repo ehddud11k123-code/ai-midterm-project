@@ -21,6 +21,15 @@ from modules.ngrams import get_ngrams, plot_ngram_bar
 from modules.export import generate_pdf_report
 from modules.lang_utils import detect_language
 
+
+
+def _extract_pdf_text(uploaded_file) -> str:
+    import pypdf
+    reader = pypdf.PdfReader(uploaded_file)
+    sep = chr(10)
+    return sep.join(page.extract_text() or "" for page in reader.pages)
+
+
 SAMPLE_TEXT_EN = """Artificial intelligence is transforming the world at an unprecedented pace.
 From healthcare to finance, AI systems are helping professionals make better decisions faster.
 Machine learning algorithms can now detect diseases from medical images with accuracy rivaling human experts.
@@ -81,11 +90,14 @@ def get_text_input(label: str = "") -> str:
     else:
         uploaded = st.file_uploader(
             f"TXT 파일{' (' + label + ')' if label else ''}",
-            type=["txt"],
+            type=["txt", "pdf"],
             key=f"upload_{label}",
         )
         if uploaded:
-            text = uploaded.read().decode("utf-8", errors="ignore")
+            if uploaded.name.endswith(".pdf"):
+                text = _extract_pdf_text(uploaded)
+            else:
+                text = uploaded.read().decode("utf-8", errors="ignore")
             st.success(f"{len(text)} 글자 로드됨")
     return text
 
