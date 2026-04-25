@@ -274,7 +274,7 @@ elif mode == "두 문서 비교":
 else:  # 📄 논문 분석
     paper_text = get_text_input()
     if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
-        with st.spinner("Gemini가 논문을 분석 중..."):
+        with st.spinner("AI가 논문을 분석 중..."):
             result = analyze_paper(paper_text)
 
         gemini = result.get("gemini")
