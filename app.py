@@ -20,6 +20,7 @@ from modules.summarize import get_summary
 from modules.ngrams import get_ngrams, plot_ngram_bar
 from modules.export import generate_pdf_report
 from modules.lang_utils import detect_language
+from modules.paper_analysis import analyze_paper
 
 
 
@@ -225,7 +226,7 @@ if mode == "단일 문서 분석":
             result = run_analysis(text)
         render_analysis(result, text, key_prefix="single")
 
-else:  # 두 문서 비교
+elif mode == "두 문서 비교":
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown("### 문서 A")
@@ -268,3 +269,28 @@ else:  # 두 문서 비교
             render_analysis(result_a, text_a, key_prefix="cmp_a")
         with tab_b:
             render_analysis(result_b, text_b, key_prefix="cmp_b")
+
+
+else:  # 📄 논문 분석
+    paper_text = get_text_input()
+    if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
+        with st.spinner("섹션 감지 중..."):
+            sections = analyze_paper(paper_text)
+        st.info(f"총 {len(sections)}개 섹션 감지됨")
+        for sec in sections:
+            with st.expander(f"📖 {sec['name']}  —  {sec['word_count']} 단어", expanded=True):
+                col_kw, col_sum = st.columns([1, 2])
+                with col_kw:
+                    st.markdown("**핵심 키워드**")
+                    if sec["keywords"]:
+                        for word, freq in sec["keywords"]:
+                            st.markdown(f"- `{word}` ({freq})")
+                    else:
+                        st.caption("키워드 없윌")
+                with col_sum:
+                    st.markdown("**섹션 요약**")
+                    if sec["summary"]:
+                        for i, sent in enumerate(sec["summary"], 1):
+                            st.markdown(f"{i}. {sent}")
+                    else:
+                        st.caption("요약 생성 불가 (텍스트 부챍)")
