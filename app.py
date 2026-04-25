@@ -186,7 +186,8 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             label_color = {"Positive": "🟢", "Neutral": "🟡", "Negative": "🔴"}
             st.markdown(f"### {label_color.get(sentiment['label'], '')} {sentiment['label']}")
             st.plotly_chart(plot_sentiment_gauge(sentiment["polarity"]), use_container_width=True, key=f"gauge_{key_prefix}")
-            st.caption(f"Subjectivity: {sentiment['subjectivity']} (0=객관적, 1=주관적)")
+            if sentiment.get("reason"):
+                st.caption(f"이유: {sentiment['reason']}")
         with col_read:
             st.subheader("📖 가독성 점수")
             st.metric("가독성 점수", readability["score"])
