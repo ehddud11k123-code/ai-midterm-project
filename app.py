@@ -277,28 +277,24 @@ else:  # 📄 논문 분석
         with st.spinner("AI가 논문을 분석 중..."):
             result = analyze_paper(paper_text)
 
-        gemini = result.get("gemini")
-
-        if gemini and "error" not in gemini:
+        if "error" in result:
+            st.error(result["error"])
+        else:
             col1, col2 = st.columns(2)
             with col1:
-                if "연구주제" in gemini:
+                if "연구주제" in result:
                     st.subheader("🎯 연구 주제")
-                    st.write(gemini["연구주제"])
-                if "연구방법" in gemini:
+                    st.write(result["연구주제"])
+                if "연구방법" in result:
                     st.subheader("⚙️ 연구 방법")
-                    st.write(gemini["연구방법"])
-                if "한계점" in gemini:
+                    st.write(result["연구방법"])
+                if "한계점" in result:
                     st.subheader("⚠️ 한계점")
-                    st.write(gemini["한계점"])
+                    st.write(result["한계점"])
             with col2:
-                if "주요기여" in gemini:
+                if "주요기여" in result:
                     st.subheader("💡 주요 기여")
-                    st.write(gemini["주요기여"])
-                if "핵심결과" in gemini:
+                    st.write(result["주요기여"])
+                if "핵심결과" in result:
                     st.subheader("📊 핵심 결과")
-                    st.write(gemini["핵심결과"])
-        elif gemini and "error" in gemini:
-            st.error(f"Gemini 오류: {gemini['error']}")
-        else:
-            st.warning("API 키가 설정되지 않았습니다.")
+                    st.write(result["핵심결과"])
