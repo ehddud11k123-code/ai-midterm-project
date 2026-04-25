@@ -1,7 +1,6 @@
 import re
-from collections import Counter
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
+import streamlit as st
+import google.generativeai as genai
 
 SECTION_PATTERNS = [
     "abstract", "introduction", "related work", "background",
@@ -18,8 +17,13 @@ _HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Sections that are already summaries — take directly
-_SUMMARY_SECTIONS = {"abstract", "conclusion", "conclusions", "future work"}
+
+def _get_model():
+    api_key = st.secrets.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return None
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-2.0-flash")
 
 
 def detect_sections(text: str) -> dict[str, str]:
@@ -38,66 +42,54 @@ def detect_sections(text: str) -> dict[str, str]:
     return sections if sections else {"전체 텍스트": text}
 
 
-def _score_sentences(sentences: list[str], section_text: str) -> list[tuple[float, str]]:
-    stop_words = set(stopwords.words("english"))
-    # TF of meaningful words in the section
-    all_words = [w.lower() for w in word_tokenize(section_text) if w.isalpha() and w.lower() not in stop_words]
-    tf = Counter(all_words)
-    total = max(len(all_words), 1)
+def analyze_paper_with_gemini(text: str) -> dict:
+    model = _get_model()
+    if not model:
+        return None
 
-    scored = []
-    paragraphs = [p.strip() for p in section_text.split("\n\n") if p.strip()]
-    para_first = set()
-    for p in paragraphs:
-        sents = sent_tokenize(p)
-        if sents:
-            para_first.add(sents[0].strip())
+    prompt = f"""다음은 학술 논문 텍스트입니다. 아래 항목을 한국어로 분석해주세요.
 
-    for idx, sent in enumerate(sentences):
-        words = [w.lower() for w in word_tokenize(sent) if w.isalpha() and w.lower() not in stop_words]
-        if len(words) < 4:
-            continue
-        tfidf_score = sum(tf.get(w, 0) / total for w in words) / max(len(words), 1)
-        # Boost first sentence of document section and paragraph-opening sentences
-        position_boost = 1.5 if idx == 0 else (1.3 if sent.strip() in para_first else 1.0)
-        scored.append((tfidf_score * position_boost, sent))
+논문 텍스트:
+{text[:8000]}
 
-    return sorted(scored, reverse=True)
+다음 형식으로 정확히 답해주세요 (각 항목은 줄바꿈으로 구분):
 
+[연구주제]
+이 논문이 다루는 핵심 주제나 문제를 1-2문장으로.
 
-def summarize_section(section_name: str, text: str, n: int = 2) -> list[str]:
-    sentences = sent_tokenize(text)
-    if len(sentences) <= n:
-        return sentences
+[주요기여]
+이 논문의 핵심 기여나 제안을 bullet point 3개로.
 
-    # For abstract/conclusion: first n sentences are best
-    if section_name.lower().rstrip("s") in _SUMMARY_SECTIONS:
-        return sentences[:n]
+[연구방법]
+사용된 방법론/기법을 2-3문장으로.
 
-    scored = _score_sentences(sentences, text)
-    if not scored:
-        return sentences[:n]
+[핵심결과]
+주요 실험 결과나 발견을 bullet point 3개로.
 
-    # Pick top-n by score, restore original order
-    top = set(s for _, s in scored[:n])
-    return [s for s in sentences if s in top][:n]
+[한계점]
+논문의 한계나 향후 연구 방향을 1-2문장으로."""
+
+    try:
+        response = model.generate_content(prompt)
+        return _parse_gemini_response(response.text)
+    except Exception as e:
+        return {"error": str(e)}
 
 
-def get_section_keywords(text: str, top_n: int = 5) -> list[tuple[str, int]]:
-    from modules.keywords import get_keywords
-    return get_keywords(text, top_n=top_n)
+def _parse_gemini_response(text: str) -> dict:
+    result = {}
+    sections = re.split(r'\[(\w+)\]', text)
+    for i in range(1, len(sections), 2):
+        key = sections[i]
+        value = sections[i + 1].strip() if i + 1 < len(sections) else ""
+        result[key] = value
+    return result
 
 
-def analyze_paper(text: str) -> list[dict]:
+def analyze_paper(text: str) -> dict:
+    gemini_result = analyze_paper_with_gemini(text)
     sections = detect_sections(text)
-    results = []
-    for name, body in sections.items():
-        words = [w for w in body.split() if w.isalpha()]
-        results.append({
-            "name": name,
-            "text": body,
-            "word_count": len(words),
-            "keywords": get_section_keywords(body),
-            "summary": summarize_section(name, body, n=2),
-        })
-    return results
+    return {
+        "gemini": gemini_result,
+        "sections": sections,
+    }

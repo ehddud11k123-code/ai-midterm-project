@@ -274,23 +274,31 @@ elif mode == "두 문서 비교":
 else:  # 📄 논문 분석
     paper_text = get_text_input()
     if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
-        with st.spinner("섹션 감지 중..."):
-            sections = analyze_paper(paper_text)
-        st.info(f"총 {len(sections)}개 섹션 감지됨")
-        for sec in sections:
-            with st.expander(f"📖 {sec['name']}  —  {sec['word_count']} 단어", expanded=True):
-                col_kw, col_sum = st.columns([1, 2])
-                with col_kw:
-                    st.markdown("**핵심 키워드**")
-                    if sec["keywords"]:
-                        for word, freq in sec["keywords"]:
-                            st.markdown(f"- `{word}` ({freq})")
-                    else:
-                        st.caption("키워드 없윌")
-                with col_sum:
-                    st.markdown("**섹션 요약**")
-                    if sec["summary"]:
-                        for i, sent in enumerate(sec["summary"], 1):
-                            st.markdown(f"{i}. {sent}")
-                    else:
-                        st.caption("요약 생성 불가 (텍스트 부챍)")
+        with st.spinner("Gemini가 논문을 분석 중..."):
+            result = analyze_paper(paper_text)
+
+        gemini = result.get("gemini")
+
+        if gemini and "error" not in gemini:
+            col1, col2 = st.columns(2)
+            with col1:
+                if "연구주제" in gemini:
+                    st.subheader("🎯 연구 주제")
+                    st.write(gemini["연구주제"])
+                if "연구방법" in gemini:
+                    st.subheader("⚙️ 연구 방법")
+                    st.write(gemini["연구방법"])
+                if "한계점" in gemini:
+                    st.subheader("⚠️ 한계점")
+                    st.write(gemini["한계점"])
+            with col2:
+                if "주요기여" in gemini:
+                    st.subheader("💡 주요 기여")
+                    st.write(gemini["주요기여"])
+                if "핵심결과" in gemini:
+                    st.subheader("📊 핵심 결과")
+                    st.write(gemini["핵심결과"])
+        elif gemini and "error" in gemini:
+            st.error(f"Gemini 오류: {gemini['error']}")
+        else:
+            st.warning("API 키가 설정되지 않았습니다.")
