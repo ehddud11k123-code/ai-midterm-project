@@ -47,9 +47,7 @@ def analyze_paper(text: str) -> dict:
 
 [핵심결과]
 주요 실험 결과나 발견을 bullet point 3개로.
-
-[한계점]
-논문의 한계나 향후 연구 방향을 1-2문장으로."""
+"""
 
     try:
         response = client.chat.completions.create(
