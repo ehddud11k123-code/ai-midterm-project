@@ -55,7 +55,7 @@ st.set_page_config(page_title="스마트 문서 분석기", page_icon="📄", la
 st.title("📄 스마트 문서 분석기")
 st.caption("텍스트를 입력하면 키워드·감정·가독성 등을 분석합니다. 한국어와 영어를 자동으로 인식합니다.")
 
-mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교", "📄 논문 분석"], horizontal=True)
+mode = st.radio("모드 선택", ["📄 논문 분석", "문서 분석"], horizontal=True)
 
 
 def get_text_input(label: str = "") -> str:
@@ -219,59 +219,8 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
 
 
 # --- Main Logic ---
-if mode == "단일 문서 분석":
-    text = get_text_input()
-    if st.button("🔍 분석하기", type="primary", disabled=not text.strip()):
-        with st.spinner("분석 중..."):
-            result = run_analysis(text)
-        render_analysis(result, text, key_prefix="single")
+if mode == "📄 논문 분석":
 
-elif mode == "두 문서 비교":
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("### 문서 A")
-        text_a = get_text_input("A")
-    with col_b:
-        st.markdown("### 문서 B")
-        text_b = get_text_input("B")
-
-    if st.button("🔍 비교 분석", type="primary", disabled=not (text_a.strip() and text_b.strip())):
-        with st.spinner("분석 중..."):
-            result_a = run_analysis(text_a)
-            result_b = run_analysis(text_b)
-
-        st.divider()
-
-        st.subheader("📊 비교 요약")
-        comp_data = {
-            "항목": ["단어 수", "문장 수", "감정", "가독성 점수", "가독성 등급"],
-            "문서 A": [
-                result_a["stats"]["word_count"],
-                result_a["stats"]["sentence_count"],
-                result_a["sentiment"]["label"],
-                result_a["readability"]["score"],
-                result_a["readability"]["grade"],
-            ],
-            "문서 B": [
-                result_b["stats"]["word_count"],
-                result_b["stats"]["sentence_count"],
-                result_b["sentiment"]["label"],
-                result_b["readability"]["score"],
-                result_b["readability"]["grade"],
-            ],
-        }
-        import pandas as pd
-        st.dataframe(pd.DataFrame(comp_data), use_container_width=True, hide_index=True)
-
-        st.divider()
-        tab_a, tab_b = st.tabs(["📄 문서 A 상세", "📄 문서 B 상세"])
-        with tab_a:
-            render_analysis(result_a, text_a, key_prefix="cmp_a")
-        with tab_b:
-            render_analysis(result_b, text_b, key_prefix="cmp_b")
-
-
-else:  # 📄 논문 분석
     paper_text = get_text_input()
     if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
         with st.spinner("AI가 논문을 분석 중..."):
@@ -298,3 +247,13 @@ else:  # 📄 논문 분석
                 if "핵심결과" in result:
                     st.subheader("📊 핵심 결과")
                     st.write(result["핵심결과"])
+
+elif mode == "문서 분석":
+
+    text = get_text_input()
+    if st.button("🔍 분석하기", type="primary", disabled=not text.strip()):
+        with st.spinner("분석 중..."):
+            result = run_analysis(text)
+        render_analysis(result, text, key_prefix="single")
+
+
