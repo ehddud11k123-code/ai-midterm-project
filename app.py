@@ -288,6 +288,9 @@ else:  # 📄 논문 분석
                 if "연구방법" in result:
                     st.subheader("⚙️ 연구 방법")
                     st.write(result["연구방법"])
+                if "의의및한계" in result:
+                    st.subheader("⚠️ 의의 및 한계")
+                    st.write(result["의의및한계"])
             with col2:
                 if "주요기여" in result:
                     st.subheader("💡 주요 기여")

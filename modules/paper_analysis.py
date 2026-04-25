@@ -29,24 +29,27 @@ def analyze_paper(text: str) -> dict:
         return {"error": "GROQ_API_KEY 값이 비어 있습니다."}
     client = Groq(api_key=api_key)
 
-    prompt = f"""다음은 학술 논문 텍스트입니다. 아래 항목을 한국어로 분석해주세요.
+    prompt = f"""다음은 학술 논문 텍스트입니다. 아래 항목을 한국어로 상세하게 분석해주세요.
 
 논문 텍스트:
-{text[:6000]}
+{text[:12000]}
 
-다음 형식으로 정확히 답해주세요:
+다음 형식으로 정확히 답해주세요. 각 항목은 충분히 자세하게 작성해주세요:
 
 [연구주제]
-이 논문이 다루는 핵심 주제나 문제를 1-2문장으로.
+이 논문이 다루는 핵심 주제, 연구 배경, 해결하려는 문제를 3-4문장으로 상세히.
 
 [주요기여]
-이 논문의 핵심 기여나 제안을 bullet point 3개로.
+이 논문의 핵심 기여와 novelty를 bullet point 5개로. 각 항목은 2문장 이상으로.
 
 [연구방법]
-사용된 방법론/기법을 2-3문장으로.
+사용된 방법론, 모델 구조, 실험 설계, 데이터셋 등을 4-5문장으로 상세히.
 
 [핵심결과]
-주요 실험 결과나 발견을 bullet point 3개로.
+주요 실험 결과, 수치, 비교 성능 등을 bullet point 5개로. 구체적인 수치 포함.
+
+[의의및한계]
+이 연구의 학문적/실용적 의의와 한계점, 향후 연구 방향을 3-4문장으로.
 """
 
     try:
@@ -54,7 +57,7 @@ def analyze_paper(text: str) -> dict:
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=1024,
+            max_tokens=2048,
         )
         return _parse_response(response.choices[0].message.content)
     except Exception as e:
