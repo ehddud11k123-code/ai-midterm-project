@@ -18,7 +18,6 @@ from modules.visualize import (
 )
 from modules.summarize import get_summary
 from modules.ngrams import get_ngrams, plot_ngram_bar
-from modules.export import generate_pdf_report
 from modules.lang_utils import detect_language
 from modules.paper_analysis import analyze_paper
 
@@ -157,18 +156,6 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
         else:
             st.info("요약을 생성하기에 텍스트가 너무 짧습니다.")
 
-        col_dl, _ = st.columns([1, 3])
-        with col_dl:
-            pdf_bytes = generate_pdf_report(
-                text, stats, sentiment, readability, keywords, summary, lang=lang
-            )
-            st.download_button(
-                label="📥 PDF 리포트 다운로드",
-                data=pdf_bytes,
-                file_name="document_analysis_report.pdf",
-                mime="application/pdf",
-                key=f"pdf_{key_prefix}",
-            )
 
     with tab2:
         col_kw, col_ng = st.columns(2)
