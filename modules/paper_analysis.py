@@ -18,20 +18,16 @@ _HEADER_RE = re.compile(
 )
 
 
-def _get_client():
+def analyze_paper(text: str) -> dict:
     try:
         api_key = st.secrets["GROQ_API_KEY"]
-    except Exception:
-        return None
+    except KeyError:
+        return {"error": "secrets에 GROQ_API_KEY 키가 없습니다."}
+    except Exception as e:
+        return {"error": f"secrets 읽기 오류: {e}"}
     if not api_key:
-        return None
-    return Groq(api_key=api_key)
-
-
-def analyze_paper(text: str) -> dict:
-    client = _get_client()
-    if not client:
-        return {"error": "API 키가 설정되지 않았습니다."}
+        return {"error": "GROQ_API_KEY 값이 비어 있습니다."}
+    client = Groq(api_key=api_key)
 
     prompt = f"""다음은 학술 논문 텍스트입니다. 아래 항목을 한국어로 분석해주세요.
 
