@@ -55,7 +55,7 @@ st.set_page_config(page_title="스마트 문서 분석기", page_icon="📄", la
 st.title("📄 스마트 문서 분석기")
 st.caption("텍스트를 입력하면 키워드·감정·가독성 등을 분석합니다. 한국어와 영어를 자동으로 인식합니다.")
 
-mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교"], horizontal=True)
+mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교", "📄 논문 분석"], horizontal=True)
 
 
 def get_text_input(label: str = "") -> str:
