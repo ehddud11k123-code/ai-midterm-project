@@ -1,7 +1,7 @@
 from groq import Groq
 
 PRIMARY_MODEL = "llama-3.3-70b-versatile"
-FALLBACK_MODEL = "llama3.3-70b"
+FALLBACK_MODEL = "llama3.1-70b"
 
 
 def _cerebras_create(messages: list, temperature: float, max_tokens: int) -> str:
