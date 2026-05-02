@@ -242,24 +242,17 @@ if mode == "📄 논문 분석":
         if "error" in result:
             st.error(result["error"])
         else:
-            col1, col2 = st.columns(2)
-            with col1:
-                if "연구주제" in result:
-                    st.subheader("🎯 연구 주제")
-                    st.write(result["연구주제"])
-                if "연구방법" in result:
-                    st.subheader("⚙️ 연구 방법")
-                    st.write(result["연구방법"])
-                if "의의및한계" in result:
-                    st.subheader("⚠️ 의의 및 한계")
-                    st.write(result["의의및한계"])
-            with col2:
-                if "주요기여" in result:
-                    st.subheader("💡 주요 기여")
-                    st.write(result["주요기여"])
-                if "핵심결과" in result:
-                    st.subheader("📊 핵심 결과")
-                    st.write(result["핵심결과"])
+            sections = [
+                ("1. 논문 개요 및 목적", "개요및목적"),
+                ("2. 연구 방법", "연구방법"),
+                ("3. 주요 분석 결과", "주요분석결과"),
+                ("4. 논문의 의의", "논문의의"),
+            ]
+            for title, key in sections:
+                if key in result:
+                    st.subheader(title)
+                    st.write(result[key])
+                    st.divider()
 
             st.divider()
             from modules.export_docx import generate_paper_docx

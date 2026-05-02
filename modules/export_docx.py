@@ -28,11 +28,10 @@ def generate_paper_docx(result: dict) -> bytes:
     doc = Document()
     _add_heading(doc, '논문 분석 결과', level=0)
     sections = [
-        ('연구 주제', '연구주제'),
-        ('주요 기여', '주요기여'),
-        ('연구 방법', '연구방법'),
-        ('핵심 결과', '핵심결과'),
-        ('의의 및 한계', '의의및한계'),
+        ('1. 논문 개요 및 목적', '개요및목적'),
+        ('2. 연구 방법', '연구방법'),
+        ('3. 주요 분석 결과', '주요분석결과'),
+        ('4. 논문의 의의', '논문의의'),
     ]
     for title, key in sections:
         if key in result:
