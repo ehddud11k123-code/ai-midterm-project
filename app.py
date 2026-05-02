@@ -242,21 +242,9 @@ if mode == "📄 논문 분석":
         if "error" in result:
             st.error(result["error"])
         else:
-            sections = [
-                ("1. 논문 개요 및 목적", "개요및목적"),
-                ("2. 연구 방법", "연구방법"),
-                ("3. 주요 분석 결과", "주요분석결과"),
-                ("4. 논문의 의의", "논문의의"),
-            ]
-            for title, key in sections:
-                if key in result:
-                    st.subheader(title)
-                    st.write(result[key])
-                    st.divider()
-
-            st.divider()
             from modules.export_docx import generate_paper_docx
             docx_bytes = generate_paper_docx(result)
+            st.success("분석 완료! 아래 버튼을 눌러 다운로드하세요.")
             st.download_button(
                 label="📄 Word 파일로 다운로드",
                 data=docx_bytes,
