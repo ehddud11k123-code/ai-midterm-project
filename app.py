@@ -156,19 +156,6 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
         else:
             st.info("요약을 생성하기에 텍스트가 너무 짧습니다.")
 
-        st.divider()
-        from modules.export_docx import generate_analysis_docx
-        docx_bytes = generate_analysis_docx(
-            text, stats, sentiment, readability, keywords, summary, lang=lang,
-            translated=st.session_state.get("doc_full_translation"),
-        )
-        st.download_button(
-            label="📄 Word 파일로 다운로드",
-            data=docx_bytes,
-            file_name="document_analysis.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key=f"docx_{key_prefix}",
-        )
 
     with tab2:
         col_kw, col_ng = st.columns(2)
@@ -229,6 +216,17 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
                     st.session_state[translate_key] = translate_to_korean(text)
             if translate_key in st.session_state:
                 st.markdown(st.session_state[translate_key])
+                st.divider()
+                from modules.export_docx import generate_translation_docx
+                full_translation = st.session_state.get("doc_full_translation", st.session_state[translate_key])
+                docx_bytes = generate_translation_docx(full_translation)
+                st.download_button(
+                    label="📄 Word 파일로 다운로드 (전문)",
+                    data=docx_bytes,
+                    file_name="translation.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key=f"docx_trans_{key_prefix}",
+                )
 
 
 # --- Main Logic ---
