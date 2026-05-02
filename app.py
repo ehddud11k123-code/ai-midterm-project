@@ -236,39 +236,22 @@ if mode == "📄 논문 분석":
     if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
         with st.spinner("AI가 논문을 분석 중..."):
             st.session_state["paper_result"] = analyze_paper(paper_text)
-            st.session_state["paper_auto_download"] = True
 
     result = st.session_state.get("paper_result")
     if result is not None:
         if "error" in result:
             st.error(result["error"])
         else:
-            import base64
             from modules.export_docx import generate_paper_docx
             docx_bytes = generate_paper_docx(result.get("content", ""))
-            b64 = base64.b64encode(docx_bytes).decode()
-
-            if st.session_state.pop("paper_auto_download", False):
-                st.components.v1.html(
-                    f"""<script>
-                    var a = document.createElement('a');
-                    a.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}';
-                    a.download = 'paper_analysis.docx';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    </script>""",
-                    height=0,
-                )
-                st.success("분석 완료! 다운로드가 시작됩니다.")
-            else:
-                st.download_button(
-                    label="📄 Word 파일 다시 다운로드",
-                    data=docx_bytes,
-                    file_name="paper_analysis.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    key="paper_docx",
-                )
+            st.success("분석 완료!")
+            st.download_button(
+                label="📄 Word 파일로 다운로드",
+                data=docx_bytes,
+                file_name="paper_analysis.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key="paper_docx",
+            )
 
 elif mode == "문서 분석":
 
