@@ -18,8 +18,17 @@ from modules.visualize import (
 )
 from modules.summarize import get_summary
 from modules.ngrams import get_ngrams, plot_ngram_bar
-from modules.export import generate_pdf_report
 from modules.lang_utils import detect_language
+from modules.paper_analysis import analyze_paper
+
+
+
+def _extract_pdf_text(uploaded_file) -> str:
+    import pypdf
+    reader = pypdf.PdfReader(uploaded_file)
+    sep = chr(10)
+    return sep.join(page.extract_text() or "" for page in reader.pages)
+
 
 SAMPLE_TEXT_EN = """Artificial intelligence is transforming the world at an unprecedented pace.
 From healthcare to finance, AI systems are helping professionals make better decisions faster.
@@ -45,7 +54,7 @@ st.set_page_config(page_title="스마트 문서 분석기", page_icon="📄", la
 st.title("📄 스마트 문서 분석기")
 st.caption("텍스트를 입력하면 키워드·감정·가독성 등을 분석합니다. 한국어와 영어를 자동으로 인식합니다.")
 
-mode = st.radio("모드 선택", ["단일 문서 분석", "두 문서 비교"], horizontal=True)
+mode = st.radio("모드 선택", ["📄 논문 분석", "문서 분석"], horizontal=True)
 
 
 def get_text_input(label: str = "") -> str:
@@ -81,11 +90,14 @@ def get_text_input(label: str = "") -> str:
     else:
         uploaded = st.file_uploader(
             f"TXT 파일{' (' + label + ')' if label else ''}",
-            type=["txt"],
+            type=["txt", "pdf"],
             key=f"upload_{label}",
         )
         if uploaded:
-            text = uploaded.read().decode("utf-8", errors="ignore")
+            if uploaded.name.endswith(".pdf"):
+                text = _extract_pdf_text(uploaded)
+            else:
+                text = uploaded.read().decode("utf-8", errors="ignore")
             st.success(f"{len(text)} 글자 로드됨")
     return text
 
@@ -121,10 +133,10 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
     bigrams = result["bigrams"]
     trigrams = result["trigrams"]
 
-    tabs = ["📊 통계 & 요약", "🔑 키워드 & N-gram", "😊 감정 & 가독성"]
+    tab_labels = ["📊 통계 & 요약", "🔑 키워드 & N-gram", "😊 감정 & 가독성"]
     if lang == "en":
-        tabs.append("🌐 한국어 번역")
-    tab_objects = st.tabs(tabs)
+        tab_labels.append("🌐 한국어 번역")
+    tab_objects = st.tabs(tab_labels)
     tab1, tab2, tab3 = tab_objects[0], tab_objects[1], tab_objects[2]
 
     with tab1:
@@ -144,18 +156,6 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
         else:
             st.info("요약을 생성하기에 텍스트가 너무 짧습니다.")
 
-        col_dl, _ = st.columns([1, 3])
-        with col_dl:
-            pdf_bytes = generate_pdf_report(
-                text, stats, sentiment, readability, keywords, summary, lang=lang
-            )
-            st.download_button(
-                label="📥 PDF 리포트 다운로드",
-                data=pdf_bytes,
-                file_name="document_analysis_report.pdf",
-                mime="application/pdf",
-                key=f"pdf_{key_prefix}",
-            )
 
     with tab2:
         col_kw, col_ng = st.columns(2)
@@ -186,7 +186,8 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             label_color = {"Positive": "🟢", "Neutral": "🟡", "Negative": "🔴"}
             st.markdown(f"### {label_color.get(sentiment['label'], '')} {sentiment['label']}")
             st.plotly_chart(plot_sentiment_gauge(sentiment["polarity"]), use_container_width=True, key=f"gauge_{key_prefix}")
-            st.caption(f"Subjectivity: {sentiment['subjectivity']} (0=객관적, 1=주관적)")
+            if sentiment.get("reason"):
+                st.caption(f"이유: {sentiment['reason']}")
         with col_read:
             st.subheader("📖 가독성 점수")
             st.metric("가독성 점수", readability["score"])
@@ -203,6 +204,8 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             st.subheader("📏 문장 길이 분포")
             st.plotly_chart(plot_sentence_length_hist(sentences), use_container_width=True, key=f"hist_{key_prefix}")
 
+
+
     if lang == "en":
         with tab_objects[3]:
             st.subheader("🌐 한국어 번역")
@@ -213,55 +216,42 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
                 st.markdown(translated)
 
 
-
 # --- Main Logic ---
-if mode == "단일 문서 분석":
+if mode == "📄 논문 분석":
+
+    paper_text = get_text_input()
+    if st.button("🔍 논문 분석하기", type="primary", disabled=not paper_text.strip()):
+        with st.spinner("AI가 논문을 분석 중..."):
+            result = analyze_paper(paper_text)
+
+        if "error" in result:
+            st.error(result["error"])
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                if "연구주제" in result:
+                    st.subheader("🎯 연구 주제")
+                    st.write(result["연구주제"])
+                if "연구방법" in result:
+                    st.subheader("⚙️ 연구 방법")
+                    st.write(result["연구방법"])
+                if "의의및한계" in result:
+                    st.subheader("⚠️ 의의 및 한계")
+                    st.write(result["의의및한계"])
+            with col2:
+                if "주요기여" in result:
+                    st.subheader("💡 주요 기여")
+                    st.write(result["주요기여"])
+                if "핵심결과" in result:
+                    st.subheader("📊 핵심 결과")
+                    st.write(result["핵심결과"])
+
+elif mode == "문서 분석":
+
     text = get_text_input()
     if st.button("🔍 분석하기", type="primary", disabled=not text.strip()):
         with st.spinner("분석 중..."):
             result = run_analysis(text)
         render_analysis(result, text, key_prefix="single")
 
-else:  # 두 문서 비교
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("### 문서 A")
-        text_a = get_text_input("A")
-    with col_b:
-        st.markdown("### 문서 B")
-        text_b = get_text_input("B")
 
-    if st.button("🔍 비교 분석", type="primary", disabled=not (text_a.strip() and text_b.strip())):
-        with st.spinner("분석 중..."):
-            result_a = run_analysis(text_a)
-            result_b = run_analysis(text_b)
-
-        st.divider()
-
-        st.subheader("📊 비교 요약")
-        comp_data = {
-            "항목": ["단어 수", "문장 수", "감정", "가독성 점수", "가독성 등급"],
-            "문서 A": [
-                result_a["stats"]["word_count"],
-                result_a["stats"]["sentence_count"],
-                result_a["sentiment"]["label"],
-                result_a["readability"]["score"],
-                result_a["readability"]["grade"],
-            ],
-            "문서 B": [
-                result_b["stats"]["word_count"],
-                result_b["stats"]["sentence_count"],
-                result_b["sentiment"]["label"],
-                result_b["readability"]["score"],
-                result_b["readability"]["grade"],
-            ],
-        }
-        import pandas as pd
-        st.dataframe(pd.DataFrame(comp_data), use_container_width=True, hide_index=True)
-
-        st.divider()
-        tab_a, tab_b = st.tabs(["📄 문서 A 상세", "📄 문서 B 상세"])
-        with tab_a:
-            render_analysis(result_a, text_a, key_prefix="cmp_a")
-        with tab_b:
-            render_analysis(result_b, text_b, key_prefix="cmp_b")
