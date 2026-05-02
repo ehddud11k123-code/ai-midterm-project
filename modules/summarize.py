@@ -13,13 +13,9 @@ def _groq_summary(text: str, sentence_count: int) -> list | None:
 
 텍스트:
 {text[:6000]}"""
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=512,
-        )
-        raw = response.choices[0].message.content.strip()
+        from modules.groq_client import groq_create
+        raw = groq_create(client, [{"role": "user", "content": prompt}],
+                          temperature=0.3, max_tokens=512)
         sentences = [s.strip() for s in raw.split('\n') if s.strip()]
         return sentences[:sentence_count]
     except Exception:

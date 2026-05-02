@@ -24,13 +24,10 @@ LABEL: Positive 또는 Negative 또는 Neutral
 POLARITY: -1.0에서 1.0 사이 숫자
 REASON: 한 문장으로 이유"""
 
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-            max_tokens=128,
-        )
-        return _parse_sentiment(response.choices[0].message.content)
+        from modules.groq_client import groq_create
+        _content = groq_create(client, [{"role": "user", "content": prompt}],
+                              temperature=0.1, max_tokens=128)
+        return _parse_sentiment(_content)
     except Exception:
         return None
 

@@ -20,13 +20,10 @@ def _groq_keywords(text: str, top_n: int) -> list[tuple[str, int]] | None:
 텍스트:
 {text[:4000]}"""
 
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-            max_tokens=512,
-        )
-        return _parse_keywords(response.choices[0].message.content, top_n)
+        from modules.groq_client import groq_create
+        _content = groq_create(client, [{"role": "user", "content": prompt}],
+                              temperature=0.1, max_tokens=512)
+        return _parse_keywords(_content, top_n)
     except Exception:
         return None
 

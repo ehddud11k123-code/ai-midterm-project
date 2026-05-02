@@ -53,13 +53,10 @@ def analyze_paper(text: str) -> dict:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=2048,
-        )
-        return _parse_response(response.choices[0].message.content)
+        from modules.groq_client import groq_create
+        content = groq_create(client, [{"role": "user", "content": prompt}],
+                              temperature=0.3, max_tokens=2048)
+        return _parse_response(content)
     except Exception as e:
         return {"error": str(e)}
 
