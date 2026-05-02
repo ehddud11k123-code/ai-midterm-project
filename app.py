@@ -245,7 +245,7 @@ if mode == "📄 논문 분석":
         else:
             import base64
             from modules.export_docx import generate_paper_docx
-            docx_bytes = generate_paper_docx(result)
+            docx_bytes = generate_paper_docx(result.get("content", ""))
             b64 = base64.b64encode(docx_bytes).decode()
 
             if st.session_state.pop("paper_auto_download", False):

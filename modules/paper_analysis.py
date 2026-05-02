@@ -1,8 +1,5 @@
-import re
 import streamlit as st
 from groq import Groq
-
-KEYS = ["개요및목적", "연구방법", "주요분석결과", "논문의의"]
 
 
 def analyze_paper(text: str) -> dict:
@@ -13,39 +10,22 @@ def analyze_paper(text: str) -> dict:
     client = Groq(api_key=api_key)
 
     prompt = (
-        "Analyze the academic paper below. Write in Korean. "
-        "Use EXACTLY the tags below — nothing before <개요및목적>, nothing after </논문의의>.\n\n"
-        "<개요및목적>\n"
-        "4-5 sentences: background, problem being solved, why it matters, limitations of prior work. No methods or results.\n"
-        "</개요및목적>\n"
-        "<연구방법>\n"
-        "5-6 sentences: model architecture, algorithms, dataset names/sizes, training settings (optimizer/lr/batch size).\n"
-        "</연구방법>\n"
-        "<주요분석결과>\n"
-        "Bullet points with specific numbers (accuracy/F1/BLEU etc), comparison to baselines.\n"
-        "</주요분석결과>\n"
-        "<논문의의>\n"
-        "4-5 sentences: academic/practical significance, contributions to the field, future research directions.\n"
-        "</논문의의>\n\n"
+        "You are an academic paper analyst. Read the paper below and write a thorough analysis in Korean.\n"
+        "Structure your response with these four headings (use ## for headings):\n\n"
+        "## 1. 논문 개요 및 목적\n"
+        "## 2. 연구 방법\n"
+        "## 3. 주요 분석 결과\n"
+        "## 4. 논문의 의의\n\n"
+        "Write 4-6 sentences per section. Be specific and detailed.\n\n"
         f"Paper:\n{text[:10000]}"
     )
 
     try:
         from modules.groq_client import groq_create
         raw = groq_create(client, [{"role": "user", "content": prompt}],
-                          temperature=0.2, max_tokens=4096)
-        result = _parse(raw)
-        if not result:
-            return {"error": "파싱 실패 — AI 원문:\n" + raw[:600]}
-        return result
+                          temperature=0.3, max_tokens=4096)
+        if not raw or not raw.strip():
+            return {"error": "AI 응답이 비어 있습니다."}
+        return {"content": raw.strip()}
     except Exception as e:
         return {"error": str(e)}
-
-
-def _parse(text: str) -> dict:
-    result = {}
-    for key in KEYS:
-        m = re.search(rf"<{key}>(.*?)</{key}>", text, re.DOTALL)
-        if m:
-            result[key] = m.group(1).strip()
-    return result

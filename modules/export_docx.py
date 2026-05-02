@@ -24,20 +24,19 @@ def _add_paragraph(doc: Document, text: str):
     _set_font(run)
 
 
-def generate_paper_docx(result: dict) -> bytes:
+def generate_paper_docx(content: str) -> bytes:
     doc = Document()
     _add_heading(doc, '논문 분석 결과', level=0)
-    sections = [
-        ('1. 논문 개요 및 목적', '개요및목적'),
-        ('2. 연구 방법', '연구방법'),
-        ('3. 주요 분석 결과', '주요분석결과'),
-        ('4. 논문의 의의', '논문의의'),
-    ]
-    for title, key in sections:
-        if key in result:
-            _add_heading(doc, title, level=1)
-            _add_paragraph(doc, result[key])
+    for line in content.split(chr(10)):
+        line = line.strip()
+        if not line:
             doc.add_paragraph()
+        elif line.startswith('## '):
+            _add_heading(doc, line[3:], level=1)
+        elif line.startswith('# '):
+            _add_heading(doc, line[2:], level=1)
+        else:
+            _add_paragraph(doc, line)
     buf = BytesIO()
     doc.save(buf)
     return buf.getvalue()
