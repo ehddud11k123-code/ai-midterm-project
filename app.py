@@ -156,6 +156,16 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
         else:
             st.info("요약을 생성하기에 텍스트가 너무 짧습니다.")
 
+        st.divider()
+        from modules.export_docx import generate_analysis_docx
+        docx_bytes = generate_analysis_docx(text, stats, sentiment, readability, keywords, summary, lang=lang)
+        st.download_button(
+            label="📄 Word 파일로 다운로드",
+            data=docx_bytes,
+            file_name="document_analysis.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key=f"docx_{key_prefix}",
+        )
 
     with tab2:
         col_kw, col_ng = st.columns(2)
@@ -245,6 +255,17 @@ if mode == "📄 논문 분석":
                 if "핵심결과" in result:
                     st.subheader("📊 핵심 결과")
                     st.write(result["핵심결과"])
+
+            st.divider()
+            from modules.export_docx import generate_paper_docx
+            docx_bytes = generate_paper_docx(result)
+            st.download_button(
+                label="📄 Word 파일로 다운로드",
+                data=docx_bytes,
+                file_name="paper_analysis.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key="paper_docx",
+            )
 
 elif mode == "문서 분석":
 
