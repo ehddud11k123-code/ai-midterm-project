@@ -107,3 +107,16 @@ def generate_paper_docx(result: dict) -> bytes:
     buf = BytesIO()
     doc.save(buf)
     return buf.getvalue()
+
+def generate_translation_docx(translated: str) -> bytes:
+    doc = Document()
+    _add_heading(doc, "한국어 번역", level=0)
+    for para in translated.split("
+"):
+        if para.strip():
+            _add_paragraph(doc, para.strip())
+        else:
+            doc.add_paragraph()
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
