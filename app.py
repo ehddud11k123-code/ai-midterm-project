@@ -238,7 +238,7 @@ if mode == "📄 논문 분석":
             st.session_state["paper_result"] = analyze_paper(paper_text)
 
     result = st.session_state.get("paper_result")
-    if result:
+    if result is not None:
         if "error" in result:
             st.error(result["error"])
         else:

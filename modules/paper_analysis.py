@@ -65,8 +65,11 @@ def analyze_paper(text: str) -> dict:
     try:
         from modules.groq_client import groq_create
         content = groq_create(client, [{"role": "user", "content": prompt}],
-                              temperature=0.3, max_tokens=2048)
-        return _parse_response(content)
+                              temperature=0.3, max_tokens=4096)
+        parsed = _parse_response(content)
+        if not parsed:
+            return {"error": "AI 응답 파싱 실패. 원문: " + content[:300]}
+        return parsed
     except Exception as e:
         return {"error": str(e)}
 
