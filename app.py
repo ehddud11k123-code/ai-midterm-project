@@ -158,7 +158,10 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
 
         st.divider()
         from modules.export_docx import generate_analysis_docx
-        docx_bytes = generate_analysis_docx(text, stats, sentiment, readability, keywords, summary, lang=lang)
+        docx_bytes = generate_analysis_docx(
+            text, stats, sentiment, readability, keywords, summary, lang=lang,
+            translated=st.session_state.get("doc_full_translation"),
+        )
         st.download_button(
             label="📄 Word 파일로 다운로드",
             data=docx_bytes,
@@ -276,9 +279,15 @@ elif mode == "문서 분석":
     text = get_text_input()
     if st.button("🔍 분석하기", type="primary", disabled=not text.strip()):
         with st.spinner("분석 중..."):
-            st.session_state["doc_result"] = run_analysis(text)
+            result = run_analysis(text)
+            st.session_state["doc_result"] = result
             st.session_state["doc_text"] = text
             st.session_state.pop("translated_single", None)
+            st.session_state.pop("doc_full_translation", None)
+        if result["lang"] == "en":
+            with st.spinner("Word 파일용 전문 번역 중..."):
+                from modules.translate import translate_full_to_korean
+                st.session_state["doc_full_translation"] = translate_full_to_korean(text)
 
     if "doc_result" in st.session_state and "doc_text" in st.session_state:
         render_analysis(st.session_state["doc_result"], st.session_state["doc_text"], key_prefix="single")

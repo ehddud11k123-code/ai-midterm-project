@@ -2,7 +2,6 @@ from io import BytesIO
 from docx import Document
 from docx.shared import Pt
 from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
 
 
 def _set_font(run, name: str = "맑은 고딕", size: int = None):
@@ -27,7 +26,8 @@ def _add_paragraph(doc: Document, text: str):
 
 def generate_analysis_docx(text: str, stats: dict, sentiment: dict,
                             readability: dict, keywords: list,
-                            summary: list, lang: str = "en") -> bytes:
+                            summary: list, lang: str = "en",
+                            translated: str = None) -> bytes:
     doc = Document()
     _add_heading(doc, "문서 분석 결과", level=0)
 
@@ -74,6 +74,13 @@ def generate_analysis_docx(text: str, stats: dict, sentiment: dict,
     _add_heading(doc, "가독성", level=1)
     _add_paragraph(doc, f"점수: {readability.get('score', '')}")
     _add_paragraph(doc, f"등급: {readability.get('grade', '')}")
+
+    if translated:
+        doc.add_page_break()
+        _add_heading(doc, "한국어 번역 (전문)", level=1)
+        for para in translated.split("\n"):
+            if para.strip():
+                _add_paragraph(doc, para.strip())
 
     buf = BytesIO()
     doc.save(buf)
