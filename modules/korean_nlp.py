@@ -13,6 +13,12 @@ def korean_sentences(text: str) -> list[str]:
     result = kiwi.split_into_sents(text)
     return [s.text for s in result]
 
+def get_morphemes(text: str) -> list[str]:
+    kiwi = _get_kiwi()
+    tokens = kiwi.tokenize(text)
+    skip = {"SP", "SW", "SF", "SE", "SY", "SSO", "SSC", "SC", "SB"}
+    return [t.form for t in tokens if t.tag not in skip]
+
 def korean_nouns(text: str) -> list[str]:
     kiwi = _get_kiwi()
     tokens = kiwi.tokenize(text)

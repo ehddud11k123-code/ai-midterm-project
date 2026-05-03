@@ -1,38 +1,4 @@
-from wordcloud import WordCloud
-from PIL import Image
 import plotly.graph_objects as go
-import os
-import urllib.request
-
-
-def _get_korean_font() -> str:
-    font_path = "/tmp/NanumGothic.ttf"
-    if not os.path.exists(font_path):
-        url = "https://github.com/naver/nanumfont/releases/download/VER2.5/NanumFont_TTF_ALL.zip"
-        # Fallback: use a direct TTF URL
-        ttf_url = "https://raw.githubusercontent.com/google/fonts/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
-        urllib.request.urlretrieve(ttf_url, font_path)
-    return font_path
-
-
-def generate_wordcloud(text: str) -> Image.Image:
-    from modules.lang_utils import detect_language
-    lang = detect_language(text)
-    kwargs = dict(
-        width=800, height=400,
-        background_color="white",
-        max_words=100,
-        colormap="viridis",
-    )
-    if lang == "ko":
-        from modules.korean_nlp import korean_nouns
-        nouns = korean_nouns(text)
-        text_for_cloud = " ".join(nouns)
-        kwargs["font_path"] = _get_korean_font()
-        wc = WordCloud(**kwargs).generate(text_for_cloud if text_for_cloud else text)
-    else:
-        wc = WordCloud(**kwargs).generate(text)
-    return wc.to_image()
 
 
 def plot_keyword_bar(keywords: list) -> go.Figure:
@@ -50,11 +16,11 @@ def plot_keyword_bar(keywords: list) -> go.Figure:
     return fig
 
 
-def plot_sentiment_gauge(polarity: float, lang: str = "en") -> go.Figure:
+def plot_sentiment_gauge(polarity: float) -> go.Figure:
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=polarity,
-        title={"text": "감정 극성" if lang == "ko" else "Sentiment Polarity"},
+        title={"text": "Sentiment Polarity"},
         gauge={
             "axis": {"range": [-1, 1]},
             "bar": {"color": "darkblue"},
