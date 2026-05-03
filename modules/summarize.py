@@ -22,13 +22,13 @@ def _groq_summary(text: str, sentence_count: int) -> list | None:
         return None
 
 
-def _lsa_summary(text: str, sentence_count: int) -> list:
+def _lexrank_summary(text: str, sentence_count: int) -> list:
     try:
         from sumy.parsers.plaintext import PlaintextParser
         from sumy.nlp.tokenizers import Tokenizer
-        from sumy.summarizers.lsa import LsaSummarizer
+        from sumy.summarizers.lex_rank import LexRankSummarizer
         parser = PlaintextParser.from_string(text, Tokenizer("english"))
-        summarizer = LsaSummarizer()
+        summarizer = LexRankSummarizer()
         return [str(s) for s in summarizer(parser.document, sentence_count)]
     except Exception:
         return []
@@ -56,4 +56,4 @@ def get_summary(text: str, sentence_count: int = 3) -> list:
     lang = detect_language(text)
     if lang == "ko":
         return _korean_summary(text, sentence_count)
-    return _lsa_summary(text, sentence_count)
+    return _lexrank_summary(text, sentence_count)
