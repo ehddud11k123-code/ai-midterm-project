@@ -189,18 +189,19 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             if sentiment.get("reason"):
                 st.caption(f"이유: {sentiment['reason']}")
         with col_read:
-            st.subheader("📖 가독성 점수")
-            st.metric("가독성 점수", readability["score"])
-            st.markdown(f"**등급:** {readability['grade']}")
-            grade_desc = {
-                "Very Easy": "매우 쉬운 글 — 초등학생도 이해 가능",
-                "Easy": "쉬운 글",
-                "Moderate": "보통 난이도",
-                "Difficult": "어려운 글 — 대학 수준",
-                "Very Difficult": "매우 어려운 글 — 전문가 수준",
-            }
-            st.caption(grade_desc.get(readability["grade"], ""))
-            st.divider()
+            if lang == "en":
+                st.subheader("📖 가독성 점수")
+                st.metric("가독성 점수", readability["score"])
+                st.markdown(f"**등급:** {readability['grade']}")
+                grade_desc = {
+                    "Very Easy": "매우 쉬운 글 — 초등학생도 이해 가능",
+                    "Easy": "쉬운 글",
+                    "Moderate": "보통 난이도",
+                    "Difficult": "어려운 글 — 대학 수준",
+                    "Very Difficult": "매우 어려운 글 — 전문가 수준",
+                }
+                st.caption(grade_desc.get(readability["grade"], ""))
+                st.divider()
             st.subheader("📏 문장 길이 분포")
             st.plotly_chart(plot_sentence_length_hist(sentences), use_container_width=True, key=f"hist_{key_prefix}")
 
