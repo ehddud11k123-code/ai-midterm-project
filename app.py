@@ -20,7 +20,6 @@ from modules.summarize import get_summary
 from modules.ngrams import get_ngrams, plot_ngram_bar
 from modules.lang_utils import detect_language
 from modules.paper_analysis import analyze_paper
-from modules.ner import get_entities
 
 
 
@@ -120,7 +119,6 @@ def run_analysis(text: str) -> dict:
         "summary": get_summary(text, sentence_count=3),
         "bigrams": get_ngrams(text, n=2, top_k=15),
         "trigrams": get_ngrams(text, n=3, top_k=10),
-        "entities": get_entities(text) if lang == "en" else {},
     }
 
 
@@ -134,7 +132,6 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
     summary = result["summary"]
     bigrams = result["bigrams"]
     trigrams = result["trigrams"]
-    entities = result.get("entities", {})
 
     tab_labels = ["📊 통계 & 요약", "🔑 키워드 & N-gram", "😊 감정 & 가독성"]
     if lang == "en":
@@ -181,18 +178,6 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
                     st.plotly_chart(plot_ngram_bar(trigrams, "Top Trigrams"), use_container_width=True, key=f"tri_{key_prefix}")
                 else:
                     st.info("Trigram 없음")
-
-    if lang == "en" and entities:
-        with tab2:
-            st.divider()
-            st.subheader("🏷️ 개체명 인식 (NER)")
-            icon = {"인물": "👤", "기관/단체": "🏢", "국가/도시": "🌍", "장소": "📍", "시설": "🏛️", "지명": "🗺️"}
-            cols = st.columns(len(entities))
-            for col, (label, names) in zip(cols, entities.items()):
-                with col:
-                    st.markdown(f"**{icon.get(label, '')} {label}**")
-                    for name in names[:10]:
-                        st.markdown(f"- {name}")
 
     with tab3:
         col_sent, col_read = st.columns(2)
