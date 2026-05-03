@@ -212,8 +212,9 @@ def render_analysis(result: dict, text: str, key_prefix: str = ""):
             translate_key = f"translated_{key_prefix}"
             if st.button("번역 시작", key=f"translate_{key_prefix}", type="primary"):
                 with st.spinner("번역 중..."):
-                    from modules.translate import translate_to_korean
+                    from modules.translate import translate_to_korean, translate_full_to_korean
                     st.session_state[translate_key] = translate_to_korean(text)
+                    st.session_state["doc_full_translation"] = translate_full_to_korean(text)
             if translate_key in st.session_state:
                 st.markdown(st.session_state[translate_key])
                 st.divider()
@@ -263,10 +264,6 @@ elif mode == "문서 분석":
             st.session_state["doc_text"] = text
             st.session_state.pop("translated_single", None)
             st.session_state.pop("doc_full_translation", None)
-        if result["lang"] == "en":
-            with st.spinner("Word 파일용 전문 번역 중..."):
-                from modules.translate import translate_full_to_korean
-                st.session_state["doc_full_translation"] = translate_full_to_korean(text)
 
     if "doc_result" in st.session_state and "doc_text" in st.session_state:
         render_analysis(st.session_state["doc_result"], st.session_state["doc_text"], key_prefix="single")
