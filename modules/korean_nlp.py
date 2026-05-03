@@ -52,26 +52,31 @@ def korean_sentiment(text: str) -> dict:
 def korean_readability(text: str, sentences: list[str]) -> dict:
     if not sentences:
         return {"score": 0.0, "grade": "N/A"}
-    kiwi = _get_kiwi()
-    tokens_per_sent = []
-    for s in sentences:
-        toks = kiwi.tokenize(s)
-        tokens_per_sent.append(len(toks))
-    avg = sum(tokens_per_sent) / len(tokens_per_sent) if tokens_per_sent else 0
-    # Simple heuristic: fewer tokens per sentence = easier
-    if avg < 8:
+
+    # 문장당 평균 어절 수 (띄어쓰기 기준)
+    avg_eojeols = sum(len(s.split()) for s in sentences) / len(sentences)
+
+    # 어절당 평균 한글 음절 수 (AC00-D7A3)
+    eojeols = [w for w in text.split() if w]
+    if eojeols:
+        avg_syllables = sum(
+            sum(1 for c in w if '가' <= c <= '힣') for w in eojeols
+        ) / len(eojeols)
+    else:
+        avg_syllables = 2.0
+
+    score = 100 - (avg_eojeols * 2.5) - (avg_syllables * 6.0)
+    score = round(max(0.0, min(100.0, score)), 1)
+
+    if score >= 80:
         grade = "Very Easy"
-        score = 90.0
-    elif avg < 12:
+    elif score >= 60:
         grade = "Easy"
-        score = 75.0
-    elif avg < 16:
+    elif score >= 40:
         grade = "Moderate"
-        score = 55.0
-    elif avg < 22:
+    elif score >= 20:
         grade = "Difficult"
-        score = 35.0
     else:
         grade = "Very Difficult"
-        score = 15.0
-    return {"score": round(score, 1), "grade": grade}
+
+    return {"score": score, "grade": grade}
