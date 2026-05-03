@@ -248,8 +248,20 @@ with st.sidebar:
         )
 
 # --- Main Area ---
-st.title("📄 스마트 문서 분석기")
-st.caption("텍스트를 입력하면 키워드·감정·가독성 등을 분석합니다.")
+def _render_landing(mode: str):
+    st.markdown("## 📄 스마트 문서 분석기")
+    st.markdown("왼쪽 사이드바에 텍스트를 입력하고 분석 버튼을 눌러보세요.")
+    st.divider()
+
+    if mode == "문서 분석":
+        c1, c2, c3 = st.columns(3)
+        c1.info("**📊 통계 & 요약**\n\n단어 수, 문장 수, 고유 단어 수 등 기본 통계와 핵심 문장 추출 요약")
+        c2.info("**🔑 키워드 & N-gram**\n\n주요 키워드 빈도 차트와 자주 함께 등장하는 단어 패턴 분석")
+        c3.info("**😊 감정 & 가독성**\n\n텍스트의 긍정/부정 감정 분석과 문장 길이 분포 시각화")
+        st.info("**🌐 한국어 번역** (영어 텍스트 한정) — AI가 전문을 번역하고 Word 파일로 다운로드")
+    else:
+        st.info("**📄 논문 분석 모드**\n\nAI(LLaMA 3.3 70B)가 논문을 읽고 4개 섹션으로 분석합니다.\n\n① 논문 개요 및 목적  ② 연구 방법  ③ 주요 분석 결과  ④ 논문의 의의\n\n분석 완료 후 Word 파일로 즉시 다운로드됩니다.")
+
 
 if mode == "📄 논문 분석":
     if analyze_clicked:
@@ -257,20 +269,21 @@ if mode == "📄 논문 분석":
             st.session_state["paper_result"] = analyze_paper(input_text)
 
     result = st.session_state.get("paper_result")
-    if result is not None:
-        if "error" in result:
-            st.error(result["error"])
-        else:
-            from modules.export_docx import generate_paper_docx
-            docx_bytes = generate_paper_docx(result.get("content", ""))
-            st.success("분석 완료!")
-            st.download_button(
-                label="📄 Word 파일로 다운로드",
-                data=docx_bytes,
-                file_name="paper_analysis.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                key="paper_docx",
-            )
+    if result is None:
+        _render_landing(mode)
+    elif "error" in result:
+        st.error(result["error"])
+    else:
+        from modules.export_docx import generate_paper_docx
+        docx_bytes = generate_paper_docx(result.get("content", ""))
+        st.success("분석 완료!")
+        st.download_button(
+            label="📄 Word 파일로 다운로드",
+            data=docx_bytes,
+            file_name="paper_analysis.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="paper_docx",
+        )
 
 elif mode == "문서 분석":
     if analyze_clicked:
@@ -283,5 +296,7 @@ elif mode == "문서 분석":
 
     if "doc_result" in st.session_state and "doc_text" in st.session_state:
         render_analysis(st.session_state["doc_result"], st.session_state["doc_text"], key_prefix="single")
+    else:
+        _render_landing(mode)
 
 
